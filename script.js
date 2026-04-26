@@ -1,4 +1,4 @@
-// script.js - PRO Three.js Version
+// script.js - Fixed Stable Version (No OrbitControls)
 
 const holder = document.getElementById("canvas-holder");
 const coverUpload = document.getElementById("coverUpload");
@@ -19,92 +19,73 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(0, 0, 6);
+camera.position.z = 6;
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
+  alpha: true,
   preserveDrawingBuffer: true
 });
+
 renderer.setSize(holder.clientWidth, holder.clientHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.shadowMap.enabled = true;
 holder.appendChild(renderer.domElement);
 
-// Controls
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.enablePan = false;
-controls.minDistance = 3;
-controls.maxDistance = 10;
-
 // Lights
-const ambient = new THREE.AmbientLight(0xffffff, 1.3);
+const ambient = new THREE.AmbientLight(0xffffff, 1.4);
 scene.add(ambient);
 
-const dir = new THREE.DirectionalLight(0xffffff, 1.4);
-dir.position.set(5, 8, 6);
-dir.castShadow = true;
-scene.add(dir);
+const light = new THREE.DirectionalLight(0xffffff, 1.4);
+light.position.set(5, 6, 8);
+scene.add(light);
 
-// Ground shadow plane
-const planeGeo = new THREE.PlaneGeometry(20, 20);
-const planeMat = new THREE.ShadowMaterial({ opacity: 0.18 });
-const plane = new THREE.Mesh(planeGeo, planeMat);
-plane.rotation.x = -Math.PI / 2;
-plane.position.y = -2.2;
-plane.receiveShadow = true;
-scene.add(plane);
-
-// Default cover canvas texture
+// Default cover texture
 function makeDefaultTexture() {
   const c = document.createElement("canvas");
-  c.width = 1024;
+  c.width = 1000;
   c.height = 1600;
-  const ctx = c.getContext("2d");
 
+  const ctx = c.getContext("2d");
   ctx.fillStyle = "#b4572c";
   ctx.fillRect(0, 0, c.width, c.height);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 82px Arial";
-  ctx.fillText("Your Book", 80, 1180);
+  ctx.font = "bold 80px Arial";
+  ctx.fillText("Your Book", 90, 1180);
 
-  ctx.font = "52px Arial";
-  ctx.fillText("Author Name", 80, 1280);
+  ctx.font = "50px Arial";
+  ctx.fillText("Author Name", 90, 1280);
 
   return new THREE.CanvasTexture(c);
 }
 
 let coverTexture = makeDefaultTexture();
-
-// Book
 let book;
 
+// Build book
 function createBook(depth = 0.55) {
   if (book) scene.remove(book);
 
   const geo = new THREE.BoxGeometry(2.4, 3.6, depth);
 
-  const materials = [
-    new THREE.MeshStandardMaterial({ color: 0x8f3f1d }), // right
-    new THREE.MeshStandardMaterial({ color: 0x8f3f1d }), // left
-    new THREE.MeshStandardMaterial({ color: 0xf5f0e7 }), // top
-    new THREE.MeshStandardMaterial({ color: 0xf5f0e7 }), // bottom
-    new THREE.MeshStandardMaterial({ map: coverTexture }), // front
-    new THREE.MeshStandardMaterial({ color: 0x9f4a23 }) // back
+  const mats = [
+    new THREE.MeshStandardMaterial({ color: 0x8f3f1d }),
+    new THREE.MeshStandardMaterial({ color: 0x8f3f1d }),
+    new THREE.MeshStandardMaterial({ color: 0xf4eee5 }),
+    new THREE.MeshStandardMaterial({ color: 0xf4eee5 }),
+    new THREE.MeshStandardMaterial({ map: coverTexture }),
+    new THREE.MeshStandardMaterial({ color: 0x9d4722 })
   ];
 
-  book = new THREE.Mesh(geo, materials);
-  book.castShadow = true;
-  book.receiveShadow = true;
-  book.rotation.y = -0.55;
+  book = new THREE.Mesh(geo, mats);
+  book.rotation.y = -0.6;
   scene.add(book);
 }
 
 createBook();
 
-// Upload cover image
+// Upload Cover
 coverUpload.addEventListener("change", function () {
   const file = this.files[0];
   if (!file) return;
@@ -122,7 +103,7 @@ coverUpload.addEventListener("change", function () {
   reader.readAsDataURL(file);
 });
 
-// Background select
+// Background
 bgSelect.addEventListener("change", () => {
   stageWrap.classList.remove("dark", "blue");
 
@@ -130,19 +111,52 @@ bgSelect.addEventListener("change", () => {
   if (bgSelect.value === "blue") stageWrap.classList.add("blue");
 });
 
-// Depth control
+// Depth
 depthRange.addEventListener("input", () => {
   createBook(parseFloat(depthRange.value));
 });
 
-// Tilt control
+// Tilt
 tiltRange.addEventListener("input", () => {
   if (book) book.rotation.x = tiltRange.value * 0.02;
+});
+
+// Mouse drag rotate
+let dragging = false;
+let prevX = 0;
+
+renderer.domElement.addEventListener("mousedown", e => {
+  dragging = true;
+  prevX = e.clientX;
+});
+
+window.addEventListener("mouseup", () => {
+  dragging = false;
+});
+
+window.addEventListener("mousemove", e => {
+  if (!dragging || !book) return;
+
+  const dx = e.clientX - prevX;
+  prevX = e.clientX;
+
+  book.rotation.y += dx * 0.01;
+});
+
+// Scroll zoom
+renderer.domElement.addEventListener("wheel", e => {
+  e.preventDefault();
+
+  camera.position.z += e.deltaY * 0.003;
+
+  if (camera.position.z < 3) camera.position.z = 3;
+  if (camera.position.z > 10) camera.position.z = 10;
 });
 
 // Export PNG
 exportBtn.addEventListener("click", () => {
   renderer.render(scene, camera);
+
   const link = document.createElement("a");
   link.download = "3d-book-mockup.png";
   link.href = renderer.domElement.toDataURL("image/png");
@@ -156,7 +170,7 @@ window.addEventListener("resize", () => {
   renderer.setSize(holder.clientWidth, holder.clientHeight);
 });
 
-// Animation loop
+// Animate
 function animate() {
   requestAnimationFrame(animate);
 
@@ -164,7 +178,6 @@ function animate() {
     book.rotation.y += 0.01;
   }
 
-  controls.update();
   renderer.render(scene, camera);
 }
 
