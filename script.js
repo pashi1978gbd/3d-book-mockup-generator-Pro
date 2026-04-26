@@ -66,33 +66,43 @@ return new THREE.CanvasTexture(c);
 
 // SPINE TEXTURE (Vertical)
 function makeSpineTexture(){
+
 const c = document.createElement("canvas");
 c.width = 500;
 c.height = 1400;
 
 const ctx = c.getContext("2d");
 
-ctx.fillStyle="#8f3f1d";
+ctx.fillStyle = "#1e2438";
 ctx.fillRect(0,0,c.width,c.height);
 
 ctx.save();
-ctx.translate(120,1280);
-ctx.rotate(-Math.PI/2);
+ctx.translate(c.width / 2, c.height / 2);
+ctx.rotate(-Math.PI / 2);
 
-ctx.fillStyle="#f4d7a1";
-ctx.font="bold 58px Arial";
+ctx.fillStyle = "#f5d79a";
+ctx.textAlign = "center";
+ctx.textBaseline = "middle";
 
-const title = (bookTitleInput.value || "YOUR BOOK TITLE").toUpperCase();
-ctx.fillText(title,0,0);
+ctx.font = "bold 56px Arial";
+ctx.fillText(
+(bookTitleInput.value || "YOUR BOOK TITLE").toUpperCase(),
+0,
+-28
+);
 
-ctx.font="36px Arial";
-ctx.fillText(authorInput.value || "Author Name",0,70);
+ctx.font = "34px Arial";
+ctx.fillText(
+authorInput.value || "Author Name",
+0,
+38
+);
 
 ctx.restore();
 
 return new THREE.CanvasTexture(c);
-}
 
+}
 coverTexture = makeFrontTexture();
 
 // BUILD BOOK
